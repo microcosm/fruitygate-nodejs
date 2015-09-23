@@ -1,7 +1,9 @@
 var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
+var ioclient = require("socket.io-client");
 var address;
+var gateways = ['http://0.0.0.0:3001', 'http://0.0.0.0:3002'];
 
 /* render chat interface */
 app.get('/', function(req, res){
@@ -24,7 +26,7 @@ io.on('connection', function(socket){
 });
 
 /* listen on port from arg */
-process.argv.forEach(function(val, index, array) {
+process.argv.forEach(function(val, index) {
   if(isPortArg(val)) {
     listenOnPort(parseInt(val));
   }
@@ -37,11 +39,20 @@ function isPortArg(val) {
 function listenOnPort(port) {
   http.listen(port, function(){
     discoverAddress();
-    console.log('initialized on ' + address);
+    connectGateways();
   });
 }
 
 function discoverAddress() {
   address = http.address();
   address = 'http://' + address['address'] + ':' + address['port'];
+  console.log('listening for activity on ' + address);
+}
+
+function connectGateways() {
+  gateways.forEach(function(val, index) {
+    if(val != address) {
+      console.log('will push to gateway ' + val);
+    }
+  });
 }
