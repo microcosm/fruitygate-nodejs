@@ -1,12 +1,13 @@
 var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
-var port = 3000;
 
+/* render chat interface */
 app.get('/', function(req, res){
   res.sendFile(__dirname + '/index.html');
 });
 
+/* route chat messages */
 io.on('connection', function(socket){
   console.log('a user connected');
 
@@ -20,6 +21,19 @@ io.on('connection', function(socket){
   });
 });
 
-http.listen(port, function(){
-  console.log('listening on *:' + port);
+/* listen on port from arg */
+process.argv.forEach(function(val, index, array) {
+  if(isPortArg(val)) {
+    listenOnPort(parseInt(val));
+  }
 });
+
+function isPortArg(val) {
+  return !isNaN(val);
+}
+
+function listenOnPort(port) {
+  http.listen(port, function(){
+    console.log('listening on *:' + port);
+  });
+}
