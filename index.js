@@ -1,9 +1,10 @@
 var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
-var ioclient = require("socket.io-client");
-var address;
-var gateways = ['http://0.0.0.0:3001', 'http://0.0.0.0:3002'];
+
+var allAddresses = ['http://0.0.0.0:3001', 'http://0.0.0.0:3002'];
+var gateways = {};
+var thisAddress;
 
 /* render chat interface */
 app.get('/', function(req, res){
@@ -20,8 +21,13 @@ io.on('connection', function(socket){
 
   socket.on('chat message', function(msg){
     io.emit('chat message', msg);
-
+    pushToGateways(msg);
     console.log('chat message: ' + msg);
+  });
+
+  socket.on('gateway message', function(msg){
+    io.emit('chat message', msg);
+    console.log('gateway message: ' + msg);
   });
 });
 
@@ -39,20 +45,29 @@ function isPortArg(val) {
 function listenOnPort(port) {
   http.listen(port, function(){
     discoverAddress();
-    connectGateways();
+    discoverGateways();
   });
 }
 
 function discoverAddress() {
-  address = http.address();
-  address = 'http://' + address['address'] + ':' + address['port'];
-  console.log('listening for activity on ' + address);
+  var address = http.address();
+  thisAddress = 'http://' + address['address'] + ':' + address['port'];
+  console.log('listening on ' + thisAddress);
 }
 
-function connectGateways() {
-  gateways.forEach(function(val, index) {
-    if(val != address) {
-      console.log('will push to gateway ' + val);
+function discoverGateways() {
+  allAddresses.forEach(function(address) {
+    if(address != thisAddress) {
+      gateways[address] = require("socket.io-client");
+      gateways[address] = gateways[address].connect(address);
+      console.log('connected to gateway ' + address);
     }
   });
+}
+
+function pushToGateways(msg) {
+  for(var address in gateways) {
+    console.log('pushing to ' + address);
+    gateways[address].emit('gateway message', msg);
+  }
 }
