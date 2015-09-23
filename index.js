@@ -1,6 +1,7 @@
 var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
+var address;
 
 /* render chat interface */
 app.get('/', function(req, res){
@@ -17,6 +18,7 @@ io.on('connection', function(socket){
 
   socket.on('chat message', function(msg){
     io.emit('chat message', msg);
+
     console.log('chat message: ' + msg);
   });
 });
@@ -34,6 +36,12 @@ function isPortArg(val) {
 
 function listenOnPort(port) {
   http.listen(port, function(){
-    console.log('listening on *:' + port);
+    discoverAddress();
+    console.log('initialized on ' + address);
   });
+}
+
+function discoverAddress() {
+  address = http.address();
+  address = 'http://' + address['address'] + ':' + address['port'];
 }
