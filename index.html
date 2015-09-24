@@ -19,6 +19,7 @@
     <script>
       $(document).ready(function(){
         var socket = io();
+        socket.emit('chat message', 'hello from a web browser window');
 
         $('form').submit(function(event){
           socket.emit('chat message', $('#m').val());

@@ -8,7 +8,8 @@ var thisAddress;
 
 var chatSocket = 'chat message';
 var gatewaySocket = 'gateway message';
-var handshakeIdentifier = 'hello from http://';
+var clientIntroduction = 'hello from ';
+var gatewayIntroduction = 'hello from http://';
 
 /* chat interface */
 app.get('/', function(req, res){
@@ -33,14 +34,18 @@ io.on('connection', function(socket){
 });
 
 function handleChatMessage(msg) {
-  console.log(chatSocket + ' received: ' + msg);
-  io.emit(chatSocket, msg);
-  pushToGateways(msg);
+  if(msg.indexOf(clientIntroduction) > -1) {
+    console.log('-> identifies as ' + msg.replace(clientIntroduction, ''));
+  } else {
+    console.log(chatSocket + ' received: ' + msg);
+    io.emit(chatSocket, msg);
+    pushToGateways(msg);
+  }
 }
 
 function handleGatewayMessage(msg) {
-  if(msg.indexOf(handshakeIdentifier) > -1) {
-    console.log('handshake from ' + msg.replace(handshakeIdentifier, ''));
+  if(msg.indexOf(gatewayIntroduction) > -1) {
+    console.log('-> identifies as ' + msg.replace(gatewayIntroduction, ''));
   } else {
     console.log(gatewaySocket + ' received: ' + msg);
     io.emit(chatSocket, msg);
@@ -77,7 +82,7 @@ function discoverGateways() {
     if(address != thisAddress) {
       gateways[address] = require("socket.io-client");
       gateways[address] = gateways[address].connect(address);
-      console.log('connected to gateway ' + address);
+      console.log('registering gateway ' + address);
     }
   });
   pushToGateways('hello from ' + thisAddress);
