@@ -8,8 +8,6 @@ var thisAddress;
 
 var chatSocket = 'chat message';
 var gatewaySocket = 'gateway message';
-var clientIntroduction = 'hello from ';
-var gatewayIntroduction = 'hello from http://';
 
 /* chat interface */
 app.get('/', function(req, res){
@@ -18,10 +16,10 @@ app.get('/', function(req, res){
 
 /* route chat messages */
 io.on('connection', function(socket){
-  console.log('[' + socket.handshake.query.clientAddress + '] just connected');
+  log('[' + socket.handshake.query.clientAddress + '] just connected');
 
   socket.on('disconnect', function(){
-    console.log('[' + socket.handshake.query.clientAddress + '] just disconnected');
+    log('[' + socket.handshake.query.clientAddress + '] just disconnected');
   });
 
   socket.on(chatSocket, function(msg){
@@ -34,13 +32,13 @@ io.on('connection', function(socket){
 });
 
 function handleChatMessage(msg) {
-  console.log(chatSocket + ' received: ' + msg);
+  log(chatSocket + ' received: ' + msg);
   io.emit(chatSocket, msg);
   pushToGateways(msg);
 }
 
 function handleGatewayMessage(msg) {
-  console.log(gatewaySocket + ' received: ' + msg);
+  log(gatewaySocket + ' received: ' + msg);
   io.emit(chatSocket, msg);
 }
 
@@ -66,7 +64,7 @@ function listenOnPort(port) {
 function discoverAddress() {
   var address = http.address();
   thisAddress = address['address'] + ':' + address['port'];
-  console.log('serving clients on [' + thisAddress + ']');
+  log('serving clients on [' + thisAddress + ']');
 }
 
 function discoverGateways() {
@@ -74,7 +72,7 @@ function discoverGateways() {
     if(address != thisAddress) {
       gateways[address] = require("socket.io-client");
       gateways[address] = gateways[address].connect('http://' + address, { query: 'clientAddress=' + thisAddress });
-      console.log('listening to gateway [' + address + ']');
+      log('listening to gateway [' + address + ']');
     }
   });
 }
@@ -83,4 +81,9 @@ function pushToGateways(msg) {
   for(var address in gateways) {
     gateways[address].emit('gateway message', msg);
   }
+}
+
+function log(msg) {
+  var now = new Date();
+  console.log(now + ': ' + msg);
 }
