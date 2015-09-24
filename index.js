@@ -2,7 +2,7 @@ var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
 
-var allAddresses = ['http://0.0.0.0:3001', 'http://0.0.0.0:3002', 'http://0.0.0.0:3003'];
+var allAddresses = ['0.0.0.0:3001', '0.0.0.0:3002', '0.0.0.0:3003'];
 var gateways = {};
 var thisAddress;
 
@@ -65,16 +65,16 @@ function listenOnPort(port) {
 /* broadcast */
 function discoverAddress() {
   var address = http.address();
-  thisAddress = 'http://' + address['address'] + ':' + address['port'];
-  console.log('listening on ' + thisAddress);
+  thisAddress = address['address'] + ':' + address['port'];
+  console.log('serving clients on [' + thisAddress + ']');
 }
 
 function discoverGateways() {
   allAddresses.forEach(function(address) {
     if(address != thisAddress) {
       gateways[address] = require("socket.io-client");
-      gateways[address] = gateways[address].connect(address, { query: 'clientAddress=' + thisAddress });
-      console.log('registering gateway ' + address);
+      gateways[address] = gateways[address].connect('http://' + address, { query: 'clientAddress=' + thisAddress });
+      console.log('listening to gateway [' + address + ']');
     }
   });
 }
