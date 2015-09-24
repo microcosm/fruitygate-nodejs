@@ -18,10 +18,10 @@ app.get('/', function(req, res){
 
 /* route chat messages */
 io.on('connection', function(socket){
-  console.log('a client connected');
+  console.log('[' + socket.handshake.query.clientAddress + '] just connected');
 
   socket.on('disconnect', function(){
-    console.log('a client disconnected');
+    console.log('[' + socket.handshake.query.clientAddress + '] just disconnected');
   });
 
   socket.on(chatSocket, function(msg){
@@ -34,22 +34,14 @@ io.on('connection', function(socket){
 });
 
 function handleChatMessage(msg) {
-  if(msg.indexOf(clientIntroduction) > -1) {
-    console.log('-> identifies as ' + msg.replace(clientIntroduction, ''));
-  } else {
-    console.log(chatSocket + ' received: ' + msg);
-    io.emit(chatSocket, msg);
-    pushToGateways(msg);
-  }
+  console.log(chatSocket + ' received: ' + msg);
+  io.emit(chatSocket, msg);
+  pushToGateways(msg);
 }
 
 function handleGatewayMessage(msg) {
-  if(msg.indexOf(gatewayIntroduction) > -1) {
-    console.log('-> identifies as ' + msg.replace(gatewayIntroduction, ''));
-  } else {
-    console.log(gatewaySocket + ' received: ' + msg);
-    io.emit(chatSocket, msg);
-  }
+  console.log(gatewaySocket + ' received: ' + msg);
+  io.emit(chatSocket, msg);
 }
 
 /* listen */
@@ -81,11 +73,10 @@ function discoverGateways() {
   allAddresses.forEach(function(address) {
     if(address != thisAddress) {
       gateways[address] = require("socket.io-client");
-      gateways[address] = gateways[address].connect(address);
+      gateways[address] = gateways[address].connect(address, { query: 'clientAddress=' + thisAddress });
       console.log('registering gateway ' + address);
     }
   });
-  pushToGateways('hello from ' + thisAddress);
 }
 
 function pushToGateways(msg) {

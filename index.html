@@ -18,8 +18,7 @@
     <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
     <script>
       $(document).ready(function(){
-        var socket = io();
-        socket.emit('chat message', 'hello from a web browser window');
+        var socket = io({ query: 'clientAddress=a browser window'});
 
         $('form').submit(function(event){
           socket.emit('chat message', $('#m').val());
