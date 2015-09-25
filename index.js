@@ -16,29 +16,29 @@ app.get('/', function(req, res){
 
 /* route chat messages */
 io.on('connection', function(socket){
-  log('[' + socket.handshake.query.clientAddress + '] just connected');
+  log('client [' + clientAddress(socket) + '] just connected');
 
   socket.on('disconnect', function(){
-    log('[' + socket.handshake.query.clientAddress + '] just disconnected');
+    log('client [' + clientAddress(socket) + '] just disconnected');
   });
 
   socket.on(chatSocket, function(msg){
-    handleChatMessage(msg);
+    handleChatMessage(msg, socket);
   });
 
   socket.on(gatewaySocket, function(msg){
-    handleGatewayMessage(msg);
+    handleGatewayMessage(msg, socket);
   });
 });
 
-function handleChatMessage(msg) {
-  log(chatSocket + ' received: ' + msg);
+function handleChatMessage(msg, socket) {
+  log('client [' + clientAddress(socket) + '] just sent [' + msg + '], emitting to clients & gateways...');
   io.emit(chatSocket, msg);
   pushToGateways(msg);
 }
 
-function handleGatewayMessage(msg) {
-  log(gatewaySocket + ' received: ' + msg);
+function handleGatewayMessage(msg, socket) {
+  log('gateway [' + clientAddress(socket) + '] just sent [' + msg + '], emitting to clients...');
   io.emit(chatSocket, msg);
 }
 
@@ -86,4 +86,8 @@ function pushToGateways(msg) {
 function log(msg) {
   var now = new Date();
   console.log(now + ': ' + msg);
+}
+
+function clientAddress(socket) {
+  return socket.handshake.query.clientAddress;
 }
