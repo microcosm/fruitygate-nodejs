@@ -3,11 +3,7 @@ var SerialPort = serialport.SerialPort;
 var readline = require('readline');
 var rl = readline.createInterface(process.stdin, process.stdout);
 
-process.argv.forEach(function(val, index) {
-  if(index == 2) {
-    openSerialPort(val);
-  }
-});
+processArgs();
 
 function openSerialPort(portName){
   var serialPort = new SerialPort(portName, {
@@ -38,4 +34,18 @@ function openSerialPort(portName){
       });
     }
   });
+}
+
+function processArgs(){
+  if(process.argv.length <= 2) {
+    console.log('Usage: node cli SERIAL_PORT_NAME');
+    console.log('Try \'node list\' to get serial port name list');
+    process.exit(0);
+  } else {
+    process.argv.forEach(function(val, index) {
+      if(index == 2) {
+        openSerialPort(val);
+      }
+    }); 
+  }
 }
