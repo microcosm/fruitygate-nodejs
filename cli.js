@@ -13,7 +13,7 @@ function openSerialPort(portName){
 
   serialPort.open(function(error) {
     if ( error ) {
-      console.log('Serial failed to open: ' + error);
+      exitWithMessage('Serial failed to open: ' + error);
     } else {
       console.log('Serial open');
       rl.setPrompt('');
@@ -29,8 +29,7 @@ function openSerialPort(portName){
           rl.prompt();
         });
       }).on('close', function() {
-        console.log('Have a great day!');
-        process.exit(0);
+        exitWithMessage('Have a great day!');
       });
     }
   });
@@ -38,9 +37,7 @@ function openSerialPort(portName){
 
 function processArgs(){
   if(process.argv.length <= 2) {
-    console.log('Usage: node cli SERIAL_PORT_NAME');
-    console.log('Try \'node list\' to get serial port name list');
-    process.exit(0);
+    exitWithMessage('Usage: node cli SERIAL_PORT_NAME\nTry \'node list\' to get serial port name list');
   } else {
     process.argv.forEach(function(val, index) {
       if(index == 2) {
@@ -48,4 +45,9 @@ function processArgs(){
       }
     }); 
   }
+}
+
+function exitWithMessage(str) {
+  console.log(str);
+  process.exit(0);
 }
