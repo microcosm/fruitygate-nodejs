@@ -37,7 +37,7 @@ function openSerialPort(portName){
 
 function processArgs(){
   if(process.argv.length <= 2) {
-    exitWithMessage('Usage: node cli SERIAL_PORT_NAME\nTry \'node list\' to get serial port name list');
+    processWithoutArgs();
   } else {
     process.argv.forEach(function(val, index) {
       if(index == 2) {
@@ -45,6 +45,27 @@ function processArgs(){
       }
     }); 
   }
+}
+
+function processWithoutArgs() {
+  var found = 0;
+  var name, port;
+  serialport.list(function (err, ports) {
+    for(var i = 0; i < ports.length; i++) {
+      port = ports[i];
+      if(port.manufacturer == 'SEGGER') {
+        found++;
+        name = port.comName;
+      }      
+    }
+
+    if(found == 1) {
+      console.log('Opening ' + name);
+      openSerialPort(name);
+    } else {
+      exitWithMessage('Usage: node cli SERIAL_PORT_NAME\nTry \'node list\' to get serial port name list');
+    }
+  });
 }
 
 function exitWithMessage(str) {
