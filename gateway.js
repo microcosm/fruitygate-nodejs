@@ -100,7 +100,7 @@ io.on('connection', function(socket){
 });
 
 /* message handling - serial I/O */
-function openSerialPort(port){
+function openSerialPort(port) {
   log('Opening serial port ' + port);
   serialPort = new SerialPort(port, {
     baudrate: 38400,
@@ -120,12 +120,13 @@ function openSerialPort(port){
 
 function incomingFromSerial(input) {
   if(isGatewayMessage(input)) {
-    var msg = parseJsonToObject(input);
-    log('Incoming from local mesh node ' + msg['sender'] + ', message \'' + msg['message'] + '\' for target ' + msg['receiver']);
+    var obj = parseToObject(input);
+    var msg = parseToMessage(obj);
+    log('Incoming from local mesh node ' + obj['sender'] + ', message \'' + obj['message'] + '\' for target ' + obj['receiver']);
     log('Emitting to local clients...');
-    io.emit(localSocket, msg['sender'] + '-' + msg['message']);
+    io.emit(localSocket, msg);
     log('Pushing to other gateways...');
-    pushToGateways(JSON.stringify(msg));
+    pushToGateways(msg);
     log('Done.');
   }
 }
@@ -134,12 +135,16 @@ function isGatewayMessage(input) {
   return input.indexOf('{ "gateway-message":') > 1;
 }
 
-function parseJsonToObject(input) {
+function parseToObject(input) {
   return JSON.parse(
     input.substring(
       input.indexOf('{ "gateway-message":'),
       input.indexOf('}}') + 2)
     )['gateway-message'];
+}
+
+function parseToMessage(obj) {
+  return obj['receiver'] + '-' + obj['message'];
 }
 
 /* message handling - generic */
@@ -155,7 +160,9 @@ function incomingFromSocket(input, socket) {
 }
 
 function incomingFromGateway(input, socket) {
-  log('Incoming from gateway [' + clientAddress(socket) + ']: message \'' + message + '\', emitting to clients...');
+  var targetNodeId = parseTargetNodeId(input);
+  var message = parseMessage(input);
+  log('Incoming from gateway [' + clientAddress(socket) + ']: message \'' + message + '\' for target ' + targetNodeId);
   log('Emitting to clients...');
   io.emit(localSocket, input);
   log('Done.');
