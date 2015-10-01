@@ -122,6 +122,11 @@ function incomingFromSerial(input) {
   if(isGatewayMessage(input)) {
     var msg = parseJsonToObject(input);
     log('Incoming from local mesh node ' + msg['sender'] + ', message \'' + msg['message'] + '\' for target ' + msg['receiver']);
+    log('Emitting to local clients...');
+    io.emit(localSocket, msg['sender'] + '-' + msg['message']);
+    log('Pushing to other gateways...');
+    pushToGateways(JSON.stringify(msg));
+    log('Done.');
   }
 }
 
