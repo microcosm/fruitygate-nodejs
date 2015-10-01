@@ -77,10 +77,6 @@ function discoverSerialPort() {
   });
 }
 
-function openSerialPort(port){
-  log('Opening serial port ' + port);
-}
-
 /* serve html */
 app.get('/', function(req, res){
   res.sendFile(__dirname + '/index.html');
@@ -95,7 +91,7 @@ io.on('connection', function(socket){
   });
 
   socket.on(localSocket, function(input){
-    incomingFromLocal(input, socket);
+    incomingFromSocket(input, socket);
   });
 
   socket.on(gatewaySocket, function(input){
@@ -103,21 +99,59 @@ io.on('connection', function(socket){
   });
 });
 
-/* message handling - serial */
-//todo
+/* message handling - serial I/O */
+function openSerialPort(port){
+  log('Opening serial port ' + port);
+  serialPort = new SerialPort(port, {
+    baudrate: 38400,
+    parser: serialport.parsers.readline('\n')
+  }, false);
+
+  serialPort.open(function(error) {
+    if ( error ) {
+      exitWithMessage('Serial failed to open: ' + error);
+    } else {
+      serialPort.on('data', function(data) {
+        incomingFromSerial(data);
+      });
+    }
+  });
+}
+
+
+function incomingFromSerial(input) {
+  if(isGatewayMessage(input)) {
+    log(extractJson(input));
+  }
+}
+
+function isGatewayMessage(input) {
+  return input.indexOf('{ "gateway-message":') > 1;
+}
+
+function extractJson(input) {
+  return input.substring(
+    input.indexOf('{ "gateway-message":'),
+    input.indexOf('}}') + 2);
+}
 
 /* message handling - generic */
-function incomingFromLocal(input, socket) {
+function incomingFromSocket(input, socket) {
   var targetNodeId = parseTargetNodeId(input);
   var message = parseMessage(input);
   log('Incoming from client [' + clientAddress(socket) + ']: message \'' + message + '\' for target ' + targetNodeId);
+  log('Emitting to other clients...');
   io.emit(localSocket, input);
+  log('Pushing to other gateways...');
   pushToGateways(input);
+  log('Done.');
 }
 
 function incomingFromGateway(input, socket) {
   log('Incoming from gateway [' + clientAddress(socket) + ']: message \'' + message + '\', emitting to clients...');
+  log('Emitting to clients...');
   io.emit(localSocket, input);
+  log('Done.');
 }
 
 function pushToGateways(input) {
