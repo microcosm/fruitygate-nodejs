@@ -1,8 +1,10 @@
 var app = require('express')();
 var http = require('http').Server(app);
 var io = require('socket.io')(http);
+
 var serialport = require('serialport');
 var SerialPort = serialport.SerialPort;
+var serialPort;
 
 var allAddresses = ['0.0.0.0:3001', '0.0.0.0:3002', '0.0.0.0:3003'];
 var gateways = {};
@@ -130,6 +132,7 @@ function incomingFromSerial(input) {
 
 function incomingFromSocket(packet, socket) {
   logIncoming('socket client', clientAddress(socket), toTargetId(packet), toMessage(packet));
+  pushToSerial(packet);
   pushToSockets(packet);
   pushToGateways(packet);
   logDone();
@@ -137,11 +140,17 @@ function incomingFromSocket(packet, socket) {
 
 function incomingFromGateway(packet, socket) {
   logIncoming('gateway', clientAddress(socket), toTargetId(packet), toMessage(packet));
+  pushToSerial(packet);
   pushToSockets(packet);
   logDone();
 }
 
 /* outgoing */
+function pushToSerial(packet) {
+  logOutgoing('serial');
+  serialPort.write('action ' + toTargetId(packet) + ' gateway ' + toMessage(packet) + ' \r');
+}
+
 function pushToSockets(packet) {
   logOutgoing('websocket clients');
   io.emit(localSocket, packet);
