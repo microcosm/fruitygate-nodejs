@@ -28,10 +28,21 @@
           event.preventDefault();
         });
 
-        socket.on(localSocket, function(msg){
-          $('#messages').append($('<li>').text(msg));
+        socket.on(localSocket, function(input){
+          var targetNodeId = parseTargetNodeId(input);
+          var message = parseMessage(input);
+          $('#messages').append($('<li>')
+            .html('<strong>Target node ID:</strong> ' + targetNodeId + '&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;<strong>Message:</strong> ' + message));
         });
       });
+
+      function parseTargetNodeId(input) {
+        return input.substring(0, input.indexOf('-'));
+      }
+
+      function parseMessage(input) {
+        return input.substring(input.indexOf('-')+1);
+      }
     </script>
     <ul id="messages"></ul>
     <form action="#">
