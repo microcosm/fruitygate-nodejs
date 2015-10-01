@@ -7,60 +7,31 @@ var SerialPort = serialport.SerialPort;
 var allAddresses = ['0.0.0.0:3001', '0.0.0.0:3002', '0.0.0.0:3003'];
 var gateways = {};
 var thisAddress;
-var usageMessage = 'Usage: node gateway HTTP_PORT SERIAL_PORT\nTry \'node list\' to get serial port name';
+var usage = 'Usage: node gateway HTTP_PORT SERIAL_PORT\nTry \'node list\' to get serial port name';
 
-var localSocket = 'local message';
-var gatewaySocket = 'gateway message';
+var localSocket = 'local packet';
+var gatewaySocket = 'gateway packet';
 
 /* startup */
 processArgs();
 
 function processArgs(){
   if(process.argv.length == 3) {
-    openHttpPort(process.argv[2]);
-    discoverSerialPort();
+    findAndBeginSerial();
+    beginHttp(process.argv[2]);
   } else if(process.argv.length == 4) {
-    openHttpPort(process.argv[2]);
-    openSerialPort(process.argv[3]);
+    beginSerial(process.argv[3]);
+    beginHttp(process.argv[2]);
   } else {
-    exitWithMessage(usageMessage);
+    exitWithInfo(usage);
   }
 }
 
-/* startup - http */
-function openHttpPort(port) {
-  if(isValidPort(port)) {
-    log('Opening http port ' + port);
-    http.listen(port, function(){
-      discoverAddress();
-      discoverGateways();
-    });
-  } else {
-    exitWithMessage(usageMessage);
-  }
-}
-
-function discoverAddress() {
-  var address = http.address();
-  thisAddress = address['address'] + ':' + address['port'];
-  log('Serving clients on [' + thisAddress + ']');
-}
-
-function discoverGateways() {
-  allAddresses.forEach(function(address) {
-    if(address != thisAddress) {
-      gateways[address] = require("socket.io-client");
-      gateways[address] = gateways[address].connect('http://' + address, { query: 'clientAddress=' + thisAddress });
-      log('Listening to gateway [' + address + ']');
-    }
-  });
-}
-
-/* startup - serial */
-function discoverSerialPort() {
-  var found = 0;
-  var name, port;
+/* begin serial */
+function findAndBeginSerial() {
   serialport.list(function (err, ports) {
+    var found = 0;
+    var name, port;
     for(var i = 0; i < ports.length; i++) {
       port = ports[i];
       if(port.manufacturer == 'SEGGER') {
@@ -68,39 +39,11 @@ function discoverSerialPort() {
         name = port.comName;
       }
     }
-
-    if(found == 1) {
-      openSerialPort(name);
-    } else {
-      exitWithMessage(usageMessage);
-    }
+    found == 1 ? beginSerial(name) : exitWithInfo(usage);
   });
 }
 
-/* serve html */
-app.get('/', function(req, res){
-  res.sendFile(__dirname + '/index.html');
-});
-
-/* message handling - websocket I/O */
-io.on('connection', function(socket){
-  log('Client [' + clientAddress(socket) + '] just connected');
-
-  socket.on('disconnect', function(){
-    log('Client [' + clientAddress(socket) + '] just disconnected');
-  });
-
-  socket.on(localSocket, function(input){
-    incomingFromSocket(input, socket);
-  });
-
-  socket.on(gatewaySocket, function(input){
-    incomingFromGateway(input, socket);
-  });
-});
-
-/* message handling - serial I/O */
-function openSerialPort(port) {
+function beginSerial(port) {
   log('Opening serial port ' + port);
   serialPort = new SerialPort(port, {
     baudrate: 38400,
@@ -108,8 +51,8 @@ function openSerialPort(port) {
   }, false);
 
   serialPort.open(function(error) {
-    if ( error ) {
-      exitWithMessage('Serial failed to open: ' + error);
+    if(error) {
+      exitWithInfo('Serial failed to open: ' + error);
     } else {
       serialPort.on('data', function(data) {
         incomingFromSerial(data);
@@ -118,85 +61,153 @@ function openSerialPort(port) {
   });
 }
 
-function incomingFromSerial(input) {
-  if(isGatewayMessage(input)) {
-    var obj = parseToObject(input);
-    var msg = parseToMessage(obj);
-    log('Incoming from local mesh node ' + obj['sender'] + ', message \'' + obj['message'] + '\' for target ' + obj['receiver']);
-    log('Emitting to local clients...');
-    io.emit(localSocket, msg);
-    log('Pushing to other gateways...');
-    pushToGateways(msg);
-    log('Done.');
+/* begin http */
+function beginHttp(port) {
+  if(isValidPort(port)) {
+    log('Opening http port ' + port);
+    http.listen(port, function(){
+      initAddress();
+      initGateways();
+      runWebServer();
+      runSocketServer();
+    });
+  } else {
+    exitWithInfo(usage);
   }
 }
 
-function isGatewayMessage(input) {
-  return input.indexOf('{ "gateway-message":') > 1;
+function initAddress() {
+  var address = http.address();
+  thisAddress = address['address'] + ':' + address['port'];
+  log('Serving clients on [' + thisAddress + ']');
 }
 
-function parseToObject(input) {
+function initGateways() {
+  allAddresses.forEach(function (address) {
+    if(address != thisAddress) {
+      gateways[address] = require("socket.io-client");
+      gateways[address] = gateways[address].connect('http://' + address, { query: 'clientAddress=' + thisAddress });
+      log('Listening to gateway [' + address + ']');
+    }
+  });
+}
+
+function runWebServer() {
+  app.get('/', function(req, res){
+    res.sendFile(__dirname + '/index.html');
+  });
+}
+
+function runSocketServer() {
+  io.on('connection', function(socket){
+    log('Client [' + clientAddress(socket) + '] just connected');
+
+    socket.on('disconnect', function(){
+      log('Client [' + clientAddress(socket) + '] just disconnected');
+    });
+
+    socket.on(localSocket, function(input){
+      incomingFromSocket(input, socket);
+    });
+
+    socket.on(gatewaySocket, function(input){
+      incomingFromGateway(input, socket);
+    });
+  });
+}
+
+/* incoming */
+function incomingFromSerial(input) {
+  if(hasGatewayJson(input)) {
+    var obj = toObject(input);
+    var packet = toPacket(obj);
+    logIncoming('local mesh node', obj['sender'], obj['receiver'], obj['message']);
+    pushToSockets(packet);
+    pushToGateways(packet);
+    logDone();
+  }
+}
+
+function incomingFromSocket(packet, socket) {
+  logIncoming('socket client', clientAddress(socket), toTargetId(packet), toMessage(packet));
+  pushToSockets(packet);
+  pushToGateways(packet);
+  logDone();
+}
+
+function incomingFromGateway(packet, socket) {
+  logIncoming('gateway', clientAddress(socket), toTargetId(packet), toMessage(packet));
+  pushToSockets(packet);
+  logDone();
+}
+
+/* outgoing */
+function pushToSockets(packet) {
+  logOutgoing('websocket clients');
+  io.emit(localSocket, packet);
+}
+
+function pushToGateways(packet) {
+  logOutgoing('gateways');
+  for(var address in gateways) {
+    gateways[address].emit(gatewaySocket, packet);
+  }
+}
+
+/* message parsing */
+function toObject(input) {
   return JSON.parse(
     input.substring(
       input.indexOf('{ "gateway-message":'),
-      input.indexOf('}}') + 2)
-    )['gateway-message'];
+      input.indexOf('}}') + 2
+    )
+  )['gateway-message'];
 }
 
-function parseToMessage(obj) {
+function toPacket(obj) {
   return obj['receiver'] + '-' + obj['message'];
 }
 
-/* message handling - generic */
-function incomingFromSocket(input, socket) {
-  var targetNodeId = parseTargetNodeId(input);
-  var message = parseMessage(input);
-  log('Incoming from socket client [' + clientAddress(socket) + ']: message \'' + message + '\' for target ' + targetNodeId);
-  log('Emitting to other clients...');
-  io.emit(localSocket, input);
-  log('Pushing to other gateways...');
-  pushToGateways(input);
+function toTargetId(packet) {
+  return packet.substring(0, packet.indexOf('-'));
+}
+
+function toMessage(packet) {
+  return packet.substring(packet.indexOf('-')+1);
+}
+
+/* logs */
+function log(out) {
+  var now = new Date();
+  console.log(now + ': ' + out);
+}
+
+function logDone() {
   log('Done.');
 }
 
-function incomingFromGateway(input, socket) {
-  var targetNodeId = parseTargetNodeId(input);
-  var message = parseMessage(input);
-  log('Incoming from gateway [' + clientAddress(socket) + ']: message \'' + message + '\' for target ' + targetNodeId);
-  log('Emitting to clients...');
-  io.emit(localSocket, input);
-  log('Done.');
+function logIncoming(source, sender, target, message) {
+  log('Incoming from ' + source + ' [' + sender + '], message \'' + message + '\' for target ' + target);
 }
 
-function pushToGateways(input) {
-  for(var address in gateways) {
-    gateways[address].emit(gatewaySocket, input);
-  }
+function logOutgoing(dest) {
+  log('Pushing to ' + dest + '...');
 }
 
 /* utilities */
-function isValidPort(val) {
-  return !isNaN(val);
-}
-
-function log(msg) {
-  var now = new Date();
-  console.log(now + ': ' + msg);
+function isValidPort(input) {
+  return !isNaN(input);
 }
 
 function clientAddress(socket) {
   return socket.handshake.query.clientAddress;
 }
 
-function parseTargetNodeId(input) {
-  return input.substring(0, input.indexOf('-'));
+function hasGatewayJson(input) {
+  return input.indexOf('{ "gateway-message":') > 1;
 }
 
-function parseMessage(input) {
-  return input.substring(input.indexOf('-')+1);
-}
-
-function exitWithMessage(str) {
-  console.log(str);
+function exitWithInfo(info) {
+  console.log(info);
   process.exit(0);
 }

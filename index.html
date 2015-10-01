@@ -19,7 +19,7 @@
     <script>
       $(document).ready(function(){
         var socket = io({ query: 'clientAddress=a browser window'});
-        var localSocket = 'local message';
+        var localSocket = 'local packet';
 
         $('form').submit(function(event){
           socket.emit(localSocket, $('#targetNodeId').val() + '-' + $('#message').val());
