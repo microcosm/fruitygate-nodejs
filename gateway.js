@@ -118,10 +118,10 @@ function openSerialPort(port){
   });
 }
 
-
 function incomingFromSerial(input) {
   if(isGatewayMessage(input)) {
-    log(extractJson(input));
+    var msg = parseJsonToObject(input);
+    log('Incoming from local mesh node ' + msg['sender'] + ', message \'' + msg['message'] + '\' for target ' + msg['receiver']);
   }
 }
 
@@ -129,17 +129,19 @@ function isGatewayMessage(input) {
   return input.indexOf('{ "gateway-message":') > 1;
 }
 
-function extractJson(input) {
-  return input.substring(
-    input.indexOf('{ "gateway-message":'),
-    input.indexOf('}}') + 2);
+function parseJsonToObject(input) {
+  return JSON.parse(
+    input.substring(
+      input.indexOf('{ "gateway-message":'),
+      input.indexOf('}}') + 2)
+    )['gateway-message'];
 }
 
 /* message handling - generic */
 function incomingFromSocket(input, socket) {
   var targetNodeId = parseTargetNodeId(input);
   var message = parseMessage(input);
-  log('Incoming from client [' + clientAddress(socket) + ']: message \'' + message + '\' for target ' + targetNodeId);
+  log('Incoming from socket client [' + clientAddress(socket) + ']: message \'' + message + '\' for target ' + targetNodeId);
   log('Emitting to other clients...');
   io.emit(localSocket, input);
   log('Pushing to other gateways...');
