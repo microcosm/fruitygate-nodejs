@@ -94,12 +94,12 @@ io.on('connection', function(socket){
     log('Client [' + clientAddress(socket) + '] just disconnected');
   });
 
-  socket.on(localSocket, function(msg){
-    incomingFromLocal(msg, socket);
+  socket.on(localSocket, function(input){
+    incomingFromLocal(input, socket);
   });
 
-  socket.on(gatewaySocket, function(msg){
-    incomingFromGateway(msg, socket);
+  socket.on(gatewaySocket, function(input){
+    incomingFromGateway(input, socket);
   });
 });
 
@@ -107,20 +107,22 @@ io.on('connection', function(socket){
 //todo
 
 /* message handling - generic */
-function incomingFromLocal(msg, socket) {
-  log('Client [' + clientAddress(socket) + '] just sent [' + msg + '], emitting to clients & gateways...');
-  io.emit(localSocket, msg);
-  pushToGateways(msg);
+function incomingFromLocal(input, socket) {
+  var targetNodeId = parseTargetNodeId(input);
+  var message = parseMessage(input);
+  log('Incoming from client [' + clientAddress(socket) + ']: message \'' + message + '\' for target ' + targetNodeId);
+  io.emit(localSocket, input);
+  pushToGateways(input);
 }
 
-function incomingFromGateway(msg, socket) {
-  log('Gateway [' + clientAddress(socket) + '] just sent [' + msg + '], emitting to clients...');
-  io.emit(localSocket, msg);
+function incomingFromGateway(input, socket) {
+  log('Incoming from gateway [' + clientAddress(socket) + ']: message \'' + message + '\', emitting to clients...');
+  io.emit(localSocket, input);
 }
 
-function pushToGateways(msg) {
+function pushToGateways(input) {
   for(var address in gateways) {
-    gateways[address].emit(gatewaySocket, msg);
+    gateways[address].emit(gatewaySocket, input);
   }
 }
 
@@ -136,6 +138,14 @@ function log(msg) {
 
 function clientAddress(socket) {
   return socket.handshake.query.clientAddress;
+}
+
+function parseTargetNodeId(input) {
+  return input.substring(0, input.indexOf('-'));
+}
+
+function parseMessage(input) {
+  return input.substring(input.indexOf('-')+1);
 }
 
 function exitWithMessage(str) {

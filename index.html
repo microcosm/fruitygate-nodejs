@@ -1,13 +1,13 @@
 <!doctype html>
 <html>
   <head>
-    <title>Socket.IO chat</title>
+    <title>Fruity Gateway Client</title>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
       body { font: 13px Helvetica, Arial; }
-      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
-      form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
-      form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+      form { background: #ccc; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+      form input { border: 0; padding: 0.6em; width: 33%; margin-right: .5%; }
+      form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 0.6em; }
       #messages { list-style-type: none; margin: 0; padding: 0; }
       #messages li { padding: 5px 10px; }
       #messages li:nth-child(odd) { background: #eee; }
@@ -22,8 +22,9 @@
         var localSocket = 'local message';
 
         $('form').submit(function(event){
-          socket.emit(localSocket, $('#m').val());
-          $('#m').val('');
+          socket.emit(localSocket, $('#targetNodeId').val() + '-' + $('#message').val());
+          $('#targetNodeId').val('');
+          $('#message').val('');
           event.preventDefault();
         });
 
@@ -34,7 +35,9 @@
     </script>
     <ul id="messages"></ul>
     <form action="#">
-      <input id="m" autocomplete="off" /><button>Send</button>
+      Target node ID: <input id="targetNodeId" maxlength="5" autocomplete="off">
+      Message: <input id="message" maxlength="10" autocomplete="off">
+      <button>Send</button>
     </form>
   </body>
 </html>
