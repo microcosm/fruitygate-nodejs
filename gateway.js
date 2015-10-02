@@ -70,6 +70,7 @@ function beginSerial(port) {
     if(error) {
       exitWithInfo('Serial failed to open: ' + error);
     } else {
+      serialPort.write('status\r');
       serialPort.on('data', function(data) {
         incomingFromSerial(data);
       });
