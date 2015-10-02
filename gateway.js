@@ -9,21 +9,35 @@ var serialPort;
 var allAddresses = ['0.0.0.0:3001', '0.0.0.0:3002', '0.0.0.0:3003'];
 var gateways = {};
 var thisAddress;
-var usage = 'Usage: node gateway HTTP_PORT SERIAL_PORT\nTry \'node list\' to get serial port name';
+var usage = 'Usage:\nnode gateway HTTP_PORT SERIAL_PORT\nnode gateway HTTP_PORT noserial\nnode gateway HTTP_PORT\nHint: Try \'node list\' to see a list of serial port names';
 
 var localSocket = 'local packet';
 var gatewaySocket = 'gateway packet';
+
+var serialEnabled;
 
 /* startup */
 processArgs();
 
 function processArgs(){
-  if(process.argv.length == 3) {
+  var numArgs = process.argv.length;
+  serialEnabled = true;
+
+  if(numArgs == 3) {
+    //node gateway HTTP_PORT
     findAndBeginSerial();
     beginHttp(process.argv[2]);
-  } else if(process.argv.length == 4) {
+
+  } else if(numArgs == 4 && process.argv[3] == 'noserial') {
+    //node gateway HTTP_PORT noserial
+    serialEnabled = false;
+    beginHttp(process.argv[2]);
+
+  } else if(numArgs == 4) {
+    //node gateway HTTP_PORT SERIAL_PORT
     beginSerial(process.argv[3]);
     beginHttp(process.argv[2]);
+
   } else {
     exitWithInfo(usage);
   }
@@ -147,8 +161,10 @@ function incomingFromGateway(packet, socket) {
 
 /* outgoing */
 function pushToSerial(packet) {
-  logOutgoing('serial');
-  serialPort.write('action ' + toTargetId(packet) + ' gateway ' + toMessage(packet) + ' \r');
+  if(serialEnabled) {
+    logOutgoing('serial');
+    serialPort.write('action ' + toTargetId(packet) + ' gateway ' + toMessage(packet) + ' \r');
+  }
 }
 
 function pushToSockets(packet) {
