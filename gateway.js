@@ -207,12 +207,12 @@ function log(out) {
   var now = new Date();
   console.log(
     '[' +
-    (now.getMonth() + 1) + '-' +
-    ('0' + (now.getDate())).slice(-2) + '-' +
+    pad(now.getMonth() + 1) + '-' +
+    pad(now.getDate()) + '-' +
     now.getFullYear() + ' ' +
-    now.getHours() + ':' +
-    now.getMinutes() + ':' +
-    now.getSeconds() + '] ' +
+    pad(now.getHours()) + ':' +
+    pad(now.getMinutes()) + ':' +
+    pad(now.getSeconds()) + '] ' +
     out
   );
 }
@@ -230,6 +230,10 @@ function logOutgoing(dest) {
 }
 
 /* utilities */
+function pad(number) {
+  return ('0' + number).slice(-2);
+}
+
 function isValidPort(input) {
   return !isNaN(input);
 }
