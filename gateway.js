@@ -204,7 +204,16 @@ function toMessage(packet) {
 /* logs */
 function log(out) {
   var now = new Date();
-  console.log(now + ': ' + out);
+  console.log(
+    '[' +
+    (now.getMonth() + 1) + '-' +
+    ('0' + (now.getDate())).slice(-2) + '-' +
+    now.getFullYear() + ' ' +
+    now.getHours() + ':' +
+    now.getMinutes() + ':' +
+    now.getSeconds() + '] ' +
+    out
+  );
 }
 
 function logDone() {
