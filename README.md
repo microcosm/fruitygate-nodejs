@@ -1,9 +1,7 @@
-Serial Gateway / Node
+FruityGate (node.js)
 ==
-The other half of an http gateway for [fruitymesh](https://github.com/mwaylabs/fruitymesh/wiki)-based bluetooth mesh networks.
+Connect remote mesh networks together using http.
 
-Say that again?
---
 The code in this repo works alongside [serial-gateway-fruitymesh](https://github.com/microcosm/serial-gateway-fruitymesh). The nodejs code from `serial-gateway-node` (this repo) runs on any internet-enabled computer, and the code from `serial-gateway-fruitymesh` runs on an [NRF51 device](https://www.nordicsemi.com/eng/Products/nRF51-Series-SoC) plugged into that computer.
 
 To have them work together, plug the nRF51 device into the USB port of the computer. For simplicity, it's easiest to use an nRF51 PCA10031 dongle as your gateway device:
