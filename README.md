@@ -24,11 +24,11 @@ Equipment
 --
 What you will need to follow the 9-step guide:
 
-1. An nRF51 device flashed with [serial-gateway-fruitymesh](https://github.com/microcosm/serial-gateway-fruitymesh) - this will be your *gateway* device
+1. An nRF51 device flashed with [FruityGate (nRF)](https://github.com/microcosm/fruitygate-nrf) - this will be your *gateway* device
 2. One computer on which you are about to follow these instructions (a laptop is fine, but note you will need 2 free USB ports)
 3. At least one other nRF51 device which is *programmed* to talk to the gateway
 
-On that last point - you need another node on the network, otherwise you don't have a mesh network. This other device is not going to *be* a gateway, it's going to be whatever custom program you want to write, but it will have to know how to *talk to* a gateway. To do this, you can look over the instructions for making gateway-compatible apps over on [serial-gateway-fruitymesh](https://github.com/microcosm/serial-gateway-fruitymesh). 
+On that last point - you need another node on the network, otherwise you don't have a mesh network. This other device is not going to *be* a gateway, it's going to be whatever custom program you want to write, but it will have to know how to *talk to* a gateway. To do this, you can look over the instructions for making gateway-compatible apps over on [FruityGate (nRF)](https://github.com/microcosm/fruitygate-nrf).
 
 But, again, let's get started quickly and just flash both your nRF51 devices with the gateway code. In order to make the second nRF51 act as a custom app instead of a gateway, toggle the `boolean` switch in `GatewayModule.cpp`. It's near the bottom - you can't miss it! Once you toggle it to `false`, compile and flash the second nRF51 device.
 
@@ -39,8 +39,8 @@ From this point forward we'll call the device which is toggled to *be* a gateway
 Clone this repo and install the dependencies:
 
 ```
-git clone https://github.com/microcosm/serial-gateway-node.git
-cd serial-gateway-node
+git clone https://github.com/microcosm/fruitygate-nodejs.git
+cd fruitygate-nodejs
 npm install
 ```
 
